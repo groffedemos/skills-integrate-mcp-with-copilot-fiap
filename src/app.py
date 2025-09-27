@@ -5,21 +5,21 @@ A super simple FastAPI application that allows students to view and sign up
 for extracurricular activities at Mergington High School.
 """
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Body
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
 import os
 from pathlib import Path
 
 app = FastAPI(title="Mergington High School API",
-              description="API for viewing and signing up for extracurricular activities")
+              description="API for viewing and signing up for extracurricular activities and saving ideas")
 
 # Mount the static files directory
 current_dir = Path(__file__).parent
 app.mount("/static", StaticFiles(directory=os.path.join(Path(__file__).parent,
           "static")), name="static")
 
-# In-memory activity database
+ # In-memory activity database
 activities = {
     "Chess Club": {
         "description": "Learn strategies and compete in chess tournaments",
@@ -76,6 +76,31 @@ activities = {
         "participants": ["charlotte@mergington.edu", "henry@mergington.edu"]
     }
 }
+
+# In-memory ideas database
+ideas = []
+@app.get("/ideas")
+def list_ideas():
+    """List all saved ideas"""
+    return {"ideas": ideas}
+
+
+@app.post("/ideas")
+def add_idea(idea: str = Body(..., embed=True)):
+    """Add a new idea"""
+    if idea in ideas:
+        raise HTTPException(status_code=400, detail="Idea already exists")
+    ideas.append(idea)
+    return {"message": "Idea added", "idea": idea}
+
+
+@app.delete("/ideas")
+def delete_idea(idea: str = Body(..., embed=True)):
+    """Delete an idea"""
+    if idea not in ideas:
+        raise HTTPException(status_code=404, detail="Idea not found")
+    ideas.remove(idea)
+    return {"message": "Idea deleted", "idea": idea}
 
 
 @app.get("/")
